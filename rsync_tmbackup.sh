@@ -6,14 +6,14 @@ APPNAME=$(basename "$0" | sed "s/\.sh$//")
 # Log functions
 # -----------------------------------------------------------------------------
 
-fn_log_info()  { echo "$APPNAME: $1"; }
-fn_log_warn()  { echo "$APPNAME: [WARNING] $1" 1>&2; }
+fn_log_info() { echo "$APPNAME: $1"; }
+fn_log_warn() { echo "$APPNAME: [WARNING] $1" 1>&2; }
 fn_log_error() { echo "$APPNAME: [ERROR] $1" 1>&2; }
-fn_log_info_cmd()  {
+fn_log_info_cmd() {
 	if [ -n "$SSH_DEST_FOLDER_PREFIX" ]; then
-		echo "$APPNAME: $SSH_CMD '$1'";
+		echo "$APPNAME: $SSH_CMD '$1'"
 	else
-		echo "$APPNAME: $1";
+		echo "$APPNAME: $1"
 	fi
 }
 
@@ -60,20 +60,22 @@ fn_display_usage() {
 fn_parse_date() {
 	# Converts YYYY-MM-DD-HHMMSS to YYYY-MM-DD HH:MM:SS and then to Unix Epoch.
 	case "$OSTYPE" in
-		linux*|cygwin*|netbsd*)
-			date -d "${1:0:10} ${1:11:2}:${1:13:2}:${1:15:2}" +%s ;;
-		FreeBSD*) date -j -f "%Y-%m-%d-%H%M%S" "$1" "+%s" ;;
-		darwin*)
-			# Under MacOS X Tiger
-			# Or with GNU 'coreutils' installed (by homebrew)
-			#   'date -j' doesn't work, so we do this:
-			yy=$(expr ${1:0:4})
-			mm=$(expr ${1:5:2} - 1)
-			dd=$(expr ${1:8:2})
-			hh=$(expr ${1:11:2})
-			mi=$(expr ${1:13:2})
-			ss=$(expr ${1:15:2})
-			perl -e 'use Time::Local; print timelocal('$ss','$mi','$hh','$dd','$mm','$yy'),"\n";' ;;
+	linux* | cygwin* | netbsd*)
+		date -d "${1:0:10} ${1:11:2}:${1:13:2}:${1:15:2}" +%s
+		;;
+	FreeBSD*) date -j -f "%Y-%m-%d-%H%M%S" "$1" "+%s" ;;
+	darwin*)
+		# Under MacOS X Tiger
+		# Or with GNU 'coreutils' installed (by homebrew)
+		#   'date -j' doesn't work, so we do this:
+		yy=$(expr ${1:0:4})
+		mm=$(expr ${1:5:2} - 1)
+		dd=$(expr ${1:8:2})
+		hh=$(expr ${1:11:2})
+		mi=$(expr ${1:13:2})
+		ss=$(expr ${1:15:2})
+		perl -e 'use Time::Local; print timelocal('$ss','$mi','$hh','$dd','$mm','$yy'),"\n";'
+		;;
 	esac
 }
 
@@ -128,7 +130,7 @@ fn_expire_backups() {
 
 		# Find which strategy token applies to this particular backup
 		for strategy_token in $(echo $EXPIRATION_STRATEGY | tr " " "\n" | sort -r -n); do
-			IFS=':' read -r -a t <<< "$strategy_token"
+			IFS=':' read -r -a t <<<"$strategy_token"
 
 			# After which date (relative to today) this token applies (X) - we use seconds to get exact cut off time
 			local cut_off_timestamp=$((current_timestamp - ${t[0]} * 86400))
@@ -175,23 +177,21 @@ fn_expire_backups() {
 
 fn_parse_ssh() {
 	# To keep compatibility with bash version < 3, we use grep
-	if echo "$DEST_FOLDER"|grep -Eq '^[A-Za-z0-9\._%\+\-]+@[A-Za-z0-9.\-]+\:.+$'
-	then
-		SSH_USER=$(echo "$DEST_FOLDER" | sed -E  's/^([A-Za-z0-9\._%\+\-]+)@([A-Za-z0-9.\-]+)\:(.+)$/\1/')
-		SSH_HOST=$(echo "$DEST_FOLDER" | sed -E  's/^([A-Za-z0-9\._%\+\-]+)@([A-Za-z0-9.\-]+)\:(.+)$/\2/')
-		SSH_DEST_FOLDER=$(echo "$DEST_FOLDER" | sed -E  's/^([A-Za-z0-9\._%\+\-]+)@([A-Za-z0-9.\-]+)\:(.+)$/\3/')
-		if [ -n "$ID_RSA" ] ; then
+	if echo "$DEST_FOLDER" | grep -Eq '^[A-Za-z0-9\._%\+\-]+@[A-Za-z0-9.\-]+\:.+$'; then
+		SSH_USER=$(echo "$DEST_FOLDER" | sed -E 's/^([A-Za-z0-9\._%\+\-]+)@([A-Za-z0-9.\-]+)\:(.+)$/\1/')
+		SSH_HOST=$(echo "$DEST_FOLDER" | sed -E 's/^([A-Za-z0-9\._%\+\-]+)@([A-Za-z0-9.\-]+)\:(.+)$/\2/')
+		SSH_DEST_FOLDER=$(echo "$DEST_FOLDER" | sed -E 's/^([A-Za-z0-9\._%\+\-]+)@([A-Za-z0-9.\-]+)\:(.+)$/\3/')
+		if [ -n "$ID_RSA" ]; then
 			SSH_CMD="ssh -p $SSH_PORT -i $ID_RSA ${SSH_USER}@${SSH_HOST}"
 		else
 			SSH_CMD="ssh -p $SSH_PORT ${SSH_USER}@${SSH_HOST}"
 		fi
 		SSH_DEST_FOLDER_PREFIX="${SSH_USER}@${SSH_HOST}:"
-	elif echo "$SRC_FOLDER"|grep -Eq '^[A-Za-z0-9\._%\+\-]+@[A-Za-z0-9.\-]+\:.+$'
-	then
-		SSH_USER=$(echo "$SRC_FOLDER" | sed -E  's/^([A-Za-z0-9\._%\+\-]+)@([A-Za-z0-9.\-]+)\:(.+)$/\1/')
-		SSH_HOST=$(echo "$SRC_FOLDER" | sed -E  's/^([A-Za-z0-9\._%\+\-]+)@([A-Za-z0-9.\-]+)\:(.+)$/\2/')
-		SSH_SRC_FOLDER=$(echo "$SRC_FOLDER" | sed -E  's/^([A-Za-z0-9\._%\+\-]+)@([A-Za-z0-9.\-]+)\:(.+)$/\3/')
-		if [ -n "$ID_RSA" ] ; then
+	elif echo "$SRC_FOLDER" | grep -Eq '^[A-Za-z0-9\._%\+\-]+@[A-Za-z0-9.\-]+\:.+$'; then
+		SSH_USER=$(echo "$SRC_FOLDER" | sed -E 's/^([A-Za-z0-9\._%\+\-]+)@([A-Za-z0-9.\-]+)\:(.+)$/\1/')
+		SSH_HOST=$(echo "$SRC_FOLDER" | sed -E 's/^([A-Za-z0-9\._%\+\-]+)@([A-Za-z0-9.\-]+)\:(.+)$/\2/')
+		SSH_SRC_FOLDER=$(echo "$SRC_FOLDER" | sed -E 's/^([A-Za-z0-9\._%\+\-]+)@([A-Za-z0-9.\-]+)\:(.+)$/\3/')
+		if [ -n "$ID_RSA" ]; then
 			SSH_CMD="ssh -p $SSH_PORT -i $ID_RSA ${SSH_USER}@${SSH_HOST}"
 		else
 			SSH_CMD="ssh -p $SSH_PORT ${SSH_USER}@${SSH_HOST}"
@@ -201,8 +201,7 @@ fn_parse_ssh() {
 }
 
 fn_run_cmd() {
-	if [ -n "$SSH_DEST_FOLDER_PREFIX" ]
-	then
+	if [ -n "$SSH_DEST_FOLDER_PREFIX" ]; then
 		eval "$SSH_CMD '$1'"
 	else
 		eval $1
@@ -210,8 +209,7 @@ fn_run_cmd() {
 }
 
 fn_run_cmd_src() {
-	if [ -n "$SSH_SRC_FOLDER_PREFIX" ]
-	then
+	if [ -n "$SSH_SRC_FOLDER_PREFIX" ]; then
 		eval "$SSH_CMD '$1'"
 	else
 		eval $1
@@ -219,7 +217,7 @@ fn_run_cmd_src() {
 }
 
 fn_find() {
-	fn_run_cmd "find '$1'"  2>/dev/null
+	fn_run_cmd "find '$1'" 2>/dev/null
 }
 
 fn_get_absolute_path() {
@@ -284,61 +282,62 @@ RSYNC_FLAGS="-D --numeric-ids --links --hard-links --one-file-system --itemize-c
 
 while :; do
 	case $1 in
-		-h|-\?|--help)
-			fn_display_usage
-			exit
-			;;
-		-p|--port)
-			shift
-			SSH_PORT=$1
-			;;
-		-i|--id_rsa)
-			shift
-			ID_RSA="$1"
-			;;
-		--rsync-get-flags)
-			shift
-			echo "$RSYNC_FLAGS"
-			exit
-			;;
-		--rsync-set-flags)
-			shift
-			RSYNC_FLAGS="$1"
-			;;
-		--rsync-append-flags)
-			shift
-			RSYNC_FLAGS="$RSYNC_FLAGS $1"
-			;;
-		--strategy)
-			shift
-			EXPIRATION_STRATEGY="$1"
-			;;
-		--log-dir)
-			shift
-			LOG_DIR="$1"
-			AUTO_DELETE_LOG="0"
-			;;
-		--no-auto-expire)
-			AUTO_EXPIRE="0"
-			;;
-		--)
-			shift
-			SRC_FOLDER="$1"
-			DEST_FOLDER="$2"
-			EXCLUSION_FILE="$3"
-			break
-			;;
-		-*)
-			fn_log_error "Unknown option: \"$1\""
-			fn_log_info ""
-			fn_display_usage
-			exit 1
-			;;
-		*)
-			SRC_FOLDER="$1"
-			DEST_FOLDER="$2"
-			EXCLUSION_FILE="$3"
-			break
+	-h | -\? | --help)
+		fn_display_usage
+		exit
+		;;
+	-p | --port)
+		shift
+		SSH_PORT=$1
+		;;
+	-i | --id_rsa)
+		shift
+		ID_RSA="$1"
+		;;
+	--rsync-get-flags)
+		shift
+		echo "$RSYNC_FLAGS"
+		exit
+		;;
+	--rsync-set-flags)
+		shift
+		RSYNC_FLAGS="$1"
+		;;
+	--rsync-append-flags)
+		shift
+		RSYNC_FLAGS="$RSYNC_FLAGS $1"
+		;;
+	--strategy)
+		shift
+		EXPIRATION_STRATEGY="$1"
+		;;
+	--log-dir)
+		shift
+		LOG_DIR="$1"
+		AUTO_DELETE_LOG="0"
+		;;
+	--no-auto-expire)
+		AUTO_EXPIRE="0"
+		;;
+	--)
+		shift
+		SRC_FOLDER="$1"
+		DEST_FOLDER="$2"
+		EXCLUSION_FILE="$3"
+		break
+		;;
+	-*)
+		fn_log_error "Unknown option: \"$1\""
+		fn_log_info ""
+		fn_display_usage
+		exit 1
+		;;
+	*)
+		SRC_FOLDER="$1"
+		DEST_FOLDER="$2"
+		EXCLUSION_FILE="$3"
+		break
+		;;
 	esac
 
 	shift
@@ -466,14 +465,13 @@ if [ -n "$(fn_find "$INPROGRESS_FILE")" ]; then
 		fi
 	elif [[ "$OSTYPE" == "netbsd"* ]]; then
 		RUNNINGPID="$(fn_run_cmd "cat $INPROGRESS_FILE")"
-		if ps -axp "$RUNNINGPID" -o "command" | grep "$APPNAME" > /dev/null; then
+		if ps -axp "$RUNNINGPID" -o "command" | grep "$APPNAME" >/dev/null; then
 			fn_log_error "Previous backup task is still active - aborting."
 			exit 1
 		fi
 	else
 		RUNNINGPID="$(fn_run_cmd "cat $INPROGRESS_FILE")"
-		if ps -p "$RUNNINGPID" -o command | grep "$APPNAME"
-		then
+		if ps -p "$RUNNINGPID" -o command | grep "$APPNAME"; then
 			fn_log_error "Previous backup task is still active - aborting."
 			exit 1
 		fi
@@ -495,7 +493,7 @@ if [ -n "$(fn_find "$INPROGRESS_FILE")" ]; then
 fi
 
 # Run in a loop to handle the "No space left on device" logic.
-while : ; do
+while :; do
 
 	# -----------------------------------------------------------------------------
 	# Check if we are doing an incremental backup (if previous backup exists).
@@ -546,7 +544,7 @@ while : ; do
 	CMD="rsync"
 	if [ -n "$SSH_CMD" ]; then
 		RSYNC_FLAGS="$RSYNC_FLAGS --compress"
-		if [ -n "$ID_RSA" ] ; then
+		if [ -n "$ID_RSA" ]; then
 			CMD="$CMD  -e 'ssh -p $SSH_PORT -i $ID_RSA -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'"
 		else
 			CMD="$CMD  -e 'ssh -p $SSH_PORT -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null'"
