@@ -641,6 +641,7 @@ fn_run() {
 # Stop containers 
 #
 MY_STARTED_CONT=""
+MY_STARTED_PROJ=""
 #
 # Multiple container names are possible, just use another "--filter" in the command below
 # MY_STARTED_CONT=`docker ps -q --filter "name=navidrome" --filter "name=doku"`
