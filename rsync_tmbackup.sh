@@ -658,7 +658,7 @@ done
 #
 # For filtering same applies as above (multiple filters are possible)
 # If you don't need to stop container from a compose environment, just comment following line (using #)
-MY_STARTED_PROJ=`docker compose ls -q --filter "name=nextcloud"
+MY_STARTED_PROJ=`docker compose ls -q --filter "name=nextcloud"`
 
 for id in ${MY_STARTED_PROJ[@]}; do
   docker compose -p $id stop
