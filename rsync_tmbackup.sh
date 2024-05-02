@@ -635,6 +635,19 @@ fn_run() {
 }
 
 #
+# Stop containers
+#
+MY_STARTED_CONT=""
+#
+# Multiple container names are possible
+# MY_STARTED_CONT=`docker ps -q --filter "name=navidrome" --filter "name=doku"`
+#
+MY_STARTED_CONT=`docker ps -q --filter "name=navidrome"`
+for id in ${MY_STARTED_CONT[@]}; do
+  docker stop $id
+done
+
+#
 # My cli arguments
 # check https://github.com/laurent22/rsync-time-backup for cli arguments of the original script
 #
@@ -643,3 +656,10 @@ MY_SSH_CONNECT=unraid-backup-user@omv.someserver.com
 MY_DEST=/srv/media-data-backup/Media
 
 fn_run --strategy "1:1 30:7" $MY_SOURCE $MY_SSH_CONNECT:$MY_DEST
+
+#
+# Start containers
+#
+for id in ${MY_STARTED_CONT[@]}; do
+  docker start $id
+done
