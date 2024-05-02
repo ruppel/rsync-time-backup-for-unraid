@@ -634,17 +634,33 @@ fn_run() {
 
 }
 
+########################
+# Ruppels additions
+########################
 #
-# Stop containers
+# Stop containers 
 #
 MY_STARTED_CONT=""
 #
-# Multiple container names are possible
+# Multiple container names are possible, just use another "--filter" in the command below
 # MY_STARTED_CONT=`docker ps -q --filter "name=navidrome" --filter "name=doku"`
 #
+# If you don't need to stop a container, just comment following line (using #)
 MY_STARTED_CONT=`docker ps -q --filter "name=navidrome"`
+
 for id in ${MY_STARTED_CONT[@]}; do
   docker stop $id
+done
+
+#
+# Stop containers in a compose environment
+#
+# For filtering same applies as above (multiple filters are possible)
+# If you don't need to stop container from a compose environment, just comment following line (using #)
+MY_STARTED_PROJ=`docker compose ls --filter "name=nextcloud" | tail -n +2 | cut --fields=1 --delimiter=" "`
+
+for id in ${MY_STARTED_PROJ[@]}; do
+  docker compose -p $id stop
 done
 
 #
@@ -662,4 +678,7 @@ fn_run --strategy "1:1 30:7" $MY_SOURCE $MY_SSH_CONNECT:$MY_DEST
 #
 for id in ${MY_STARTED_CONT[@]}; do
   docker start $id
+done
+for id in ${MY_STARTED_PROJ[@]}; do
+  docker compose -p $id start
 done
