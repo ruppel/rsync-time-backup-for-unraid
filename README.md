@@ -1,6 +1,6 @@
 # Rsync time backup for unraid
 
-This script is a fork from  laurent22/rsync-time-backup
+This script is a fork of laurent22/rsync-time-backup
 
 Give ALL THE CREDITS TO HIM!!!
 
@@ -11,7 +11,7 @@ My additions:
 * stop certain docker containers before doing the backup and restart those containers afterwards
 * stop certain docker compose projects before doing the backup and restart them afterwards 
 
-You have to to adjust the script to your needs.
+You have to adjust the script to your needs.
 Check out the end of the file. There you have to
 * decide whether and what docker containers you wish to be stopped
 * decide whether and what docker compose projects you wish to be stopped
