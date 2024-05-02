@@ -6,6 +6,16 @@ Give ALL THE CREDITS TO HIM!!!
 
 I only changed a few things so it can run as a userscript in unraid.
 
+My additions:
+* usable as a userscript in Unraid without given arguments
+* stop certain docker containers before doing the backup and restart those containers afterwards
+* stop certain docker compose projects before doing the backup and restart them afterwards 
+
+You have to to adjust the script to your needs.
+Check out the end of the file. There you have to
+* decide whether and what docker containers you wish to be stopped
+* decide whether and what docker compose projects you wish to be stopped
+* decide which arguments to use for your backup (hint: laurent22/rsync-time-backup)
 
 ## LICENSE
 
