@@ -637,32 +637,57 @@ fn_run() {
 ########################
 # Ruppels additions
 ########################
-#
-# Stop containers 
-#
 MY_STARTED_CONT=""
 MY_STARTED_PROJ=""
+fn_buildFilterString() {
+	local filterString=""
+	for arg in $*; do
+		filterString="${filterString} --filter name=${arg}"
+	done
+	echo $filterString
+}
+fn_setContainerNamesToStop() {
+	MY_STARTED_CONT=$(docker ps -q $(fn_buildFilterString $*))
+}
+fn_setComposeProjectsToStop() {
+	MY_STARTED_PROJ=$(docker compose ls $(fn_buildFilterString $*) | tail -n +2 | cut --fields=1 --delimiter=" ")
+}
+fn_stopRunningDockerContainers() {
+	for id in ${MY_STARTED_CONT[@]}; do
+		docker stop $id
+	done
+	for id in ${MY_STARTED_PROJ[@]}; do
+		docker compose -p $id stop
+	done
+}
+fn_startStoppedDockerContainers() {
+	for id in ${MY_STARTED_CONT[@]}; do
+		docker start $id
+	done
+	for id in ${MY_STARTED_PROJ[@]}; do
+		docker compose -p $id start
+	done
+}
 #
-# Multiple container names are possible, just use another "--filter" in the command below
-# MY_STARTED_CONT=`docker ps -q --filter "name=navidrome" --filter "name=doku"`
+# Set which containers to stop
+# They are only stopped and restarted afterwards, if the really are running right now
+# Multiple container names can be given separated by a space
 #
-# If you don't need to stop a container, just comment following line (using #)
-MY_STARTED_CONT=`docker ps -q --filter "name=navidrome"`
+# Comment the following line, if you don't want to stop a single container
+fn_setContainerNamesToStop navidrome doku
 
-for id in ${MY_STARTED_CONT[@]}; do
-  docker stop $id
-done
+#
+# Set which composer projects to stop
+# They are only stopped and restarted afterwards, if the really are running right now
+# Multiple project names can be given separated by a space
+#
+# Comment the following line, if you don't want to stop a composer project
+fn_setComposeProjectsToStop nextcloud
 
 #
-# Stop containers in a compose environment
+# Stop running containers
 #
-# For filtering same applies as above (multiple filters are possible)
-# If you don't need to stop container from a compose environment, just comment following line (using #)
-MY_STARTED_PROJ=`docker compose ls -q --filter "name=nextcloud"`
-
-for id in ${MY_STARTED_PROJ[@]}; do
-  docker compose -p $id stop
-done
+fn_stopRunningDockerContainers
 
 #
 # My cli arguments
@@ -675,11 +700,6 @@ MY_DEST=/srv/media-data-backup/Media
 fn_run --strategy "1:1 30:7" $MY_SOURCE $MY_SSH_CONNECT:$MY_DEST
 
 #
-# Start containers
+# Start stopped containers
 #
-for id in ${MY_STARTED_CONT[@]}; do
-  docker start $id
-done
-for id in ${MY_STARTED_PROJ[@]}; do
-  docker compose -p $id start
-done
+fn_startStoppedDockerContainers
