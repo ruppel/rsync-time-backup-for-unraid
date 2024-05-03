@@ -92,7 +92,7 @@ fn_expire_backup() {
 	# sure we're deleting the right folder
 	if [ -z "$(fn_find_backup_marker "$(dirname -- "$1")")" ]; then
 		fn_log_error "$1 is not on a backup destination - aborting."
-		exit 1
+		return 1
 	fi
 
 	fn_log_info "Expiring $1"
@@ -148,6 +148,10 @@ fn_expire_backups() {
 				# Special case: if Y is "0" we delete every time
 				if [ $cut_off_interval_days -eq "0" ]; then
 					fn_expire_backup "$backup_dir"
+					my_ec=$?
+					if [[ $my_ec -ne 0 ]]; then
+						return $my_ec
+					fi
 					break
 				fi
 
@@ -163,6 +167,10 @@ fn_expire_backups() {
 
 					# Yes: Delete that one
 					fn_expire_backup "$backup_dir"
+					my_ec=$?
+					if [[ $my_ec -ne 0 ]]; then
+						return $my_ec
+					fi
 					# backup deleted no point to check shorter timespan strategies - go to the next backup
 					break
 
@@ -293,7 +301,7 @@ fn_run() {
 		case $1 in
 		-h | -\? | --help)
 			fn_display_usage
-			exit
+			return
 			;;
 		-p | --port)
 			shift
@@ -306,7 +314,7 @@ fn_run() {
 		--rsync-get-flags)
 			shift
 			echo "$RSYNC_FLAGS"
-			exit
+			return
 			;;
 		--rsync-set-flags)
 			shift
@@ -339,7 +347,7 @@ fn_run() {
 			fn_log_error "Unknown option: \"$1\""
 			fn_log_info ""
 			fn_display_usage
-			exit 1
+			return 1
 			;;
 		*)
 			SRC_FOLDER="$1"
@@ -355,7 +363,7 @@ fn_run() {
 	# Display usage information if required arguments are not passed
 	if [[ -z "$SRC_FOLDER" || -z "$DEST_FOLDER" ]]; then
 		fn_display_usage
-		exit 1
+		return 1
 	fi
 
 	# Strips off last slash from dest. Note that it means the root folder "/"
@@ -380,7 +388,7 @@ fn_run() {
 	# Exit if source folder does not exist.
 	if ! fn_test_file_exists_src "${SRC_FOLDER}"; then
 		fn_log_error "Source folder \"${SRC_FOLDER}\" does not exist - aborting."
-		exit 1
+		return 1
 	fi
 
 	# Now strip off last slash from source folder.
@@ -389,7 +397,7 @@ fn_run() {
 	for ARG in "$SRC_FOLDER" "$DEST_FOLDER" "$EXCLUSION_FILE"; do
 		if [[ "$ARG" == *"'"* ]]; then
 			fn_log_error 'Source and destination directories may not contain single quote characters.'
-			exit 1
+			return 1
 		fi
 	done
 
@@ -408,7 +416,7 @@ fn_run() {
 		fn_log_info ""
 		fn_log_info_cmd "mkdir -p -- \"$DEST_FOLDER\" ; touch \"$(fn_backup_marker_path "$DEST_FOLDER")\""
 		fn_log_info ""
-		exit 1
+		return 1
 	fi
 
 	# Check source and destination file-system (df -T /dest).
@@ -470,19 +478,19 @@ fn_run() {
 			# 4. if found, assume backup is still running
 			if [ "$GREPCODE" = 0 ]; then
 				fn_log_error "Previous backup task is still active - aborting (command: $RUNNINGCMD)."
-				exit 1
+				return 1
 			fi
 		elif [[ "$OSTYPE" == "netbsd"* ]]; then
 			RUNNINGPID="$(fn_run_cmd "cat $INPROGRESS_FILE")"
 			if ps -axp "$RUNNINGPID" -o "command" | grep "$APPNAME" >/dev/null; then
 				fn_log_error "Previous backup task is still active - aborting."
-				exit 1
+				return 1
 			fi
 		else
 			RUNNINGPID="$(fn_run_cmd "cat $INPROGRESS_FILE")"
 			if ps -p "$RUNNINGPID" -o command | grep "$APPNAME"; then
 				fn_log_error "Previous backup task is still active - aborting."
-				exit 1
+				return 1
 			fi
 		fi
 
@@ -535,9 +543,17 @@ fn_run() {
 		if [ -n "$PREVIOUS_DEST" ]; then
 			# regardless of expiry strategy keep backup used for --link-dest
 			fn_expire_backups "$PREVIOUS_DEST"
+			my_ec=$?
+			if [[ $my_ec -ne 0 ]]; then
+				return $my_ec
+			fi
 		else
 			# keep latest backup
 			fn_expire_backups "$DEST"
+			my_ec=$?
+			if [[ $my_ec -ne 0 ]]; then
+				return $my_ec
+			fi
 		fi
 
 		# -----------------------------------------------------------------------------
@@ -584,17 +600,21 @@ fn_run() {
 
 			if [[ $AUTO_EXPIRE == "0" ]]; then
 				fn_log_error "No space left on device, and automatic purging of old backups is disabled."
-				exit 1
+				return 1
 			fi
 
 			fn_log_warn "No space left on device - removing oldest backup and resuming."
 
 			if [[ "$(fn_find_backups | wc -l)" -lt "2" ]]; then
 				fn_log_error "No space left on device, and no old backup to delete."
-				exit 1
+				return 1
 			fi
 
 			fn_expire_backup "$(fn_find_backups | tail -n 1)"
+			my_ec=$?
+			if [[ $my_ec -ne 0 ]]; then
+				return $my_ec
+			fi
 
 			# Resume backup
 			continue
@@ -629,7 +649,7 @@ fn_run() {
 			fn_rm_file "$INPROGRESS_FILE"
 		fi
 
-		exit $EXIT_CODE
+		return $EXIT_CODE
 	done
 
 }
@@ -699,7 +719,11 @@ MY_DEST=/srv/media-data-backup/Media
 
 fn_run --strategy "1:1 30:7" $MY_SOURCE $MY_SSH_CONNECT:$MY_DEST
 
+my_ec=$?
+
 #
 # Start stopped containers
 #
 fn_startStoppedDockerContainers
+
+exit $my_ec
